@@ -70,4 +70,4 @@ u = ifft(sol_fourier, [], 2);
 
 telapsed = toc(tstart); fprintf('Time processed: %f \n', telapsed);
 %% Plot the solution.
-plot(x, u(1,:), 'b-', x, u(end-20,:), 'k-', 'LineWidth', 1.5);
+plot(x, u(1,:), 'b-', x, u(end,:), 'k-', 'LineWidth', 1.5);
