@@ -30,27 +30,16 @@
 % shock waves. The jump condition is smoothed out by using the
 % regularized tanh function instead of the straight constant lines.
 
-%% Space-time mesh
-a = -150;       % left boundary
-b = 150;        % right boundary
-L = b - a; 
-N = 2^10;     % number of modes
-h = L/N;
-scale = L/(2*pi);
-if mod(N, 2) == 0   % define collocation & wave numbers
-    x = (a : h : b-h)';
-    k = [0:N/2-1, 0, -N/2+1 : -1]'/scale;
-else
-    x = (a+h/2 : h : b-h/2)';
-    k = [0:(N-1)/2, -(N-1)/2: -1]'/scale;
-end
-tmax = 20;
+%% Problem domain and initial condition
+[x, k] = generateMesh1D(-150, 150, 2^10);   
+tmax = 20;      % maximum simulation time
 
-alpha = +1; % Parameters for Benjamin equation.
-beta  = +1;
+HilbertSign = 1;    % correspond to how we define the Hilbert transform
+alpha = +1;         % correspond to BO-type dispersion
+beta  = +1;         % correspond to KdV-type dispersion
 
 % Initial condition: We use the jump condition for generating DSWs.
-jumpLocation = [a, 0];
+jumpLocation = [min(x), 0];
 uLimits = [1, 0];
 delta = 1.5*ones(1,2);
 iu = 0.5*(uLimits(1) - uLimits(2))*(tanh(delta(1)*(x-jumpLocation(1))) ...
@@ -58,16 +47,15 @@ iu = 0.5*(uLimits(1) - uLimits(2))*(tanh(delta(1)*(x-jumpLocation(1))) ...
 
 %% Time integration in the Fourier space
 tstart = tic;
-
+%--------------------------------------
 ik = 1i*k;
-q = -(1i*k + alpha*1i*k.*abs(k) + 1i*beta*k.^3);
+q = -(1i*k + HilbertSign*alpha*1i*k.*abs(k) + 1i*beta*k.^3);
 odefunc = @(t, u_fourier) q.*u_fourier - ik.*fft(ifft(u_fourier).^2);
 tspan = linspace(0, tmax, 51);
-% options = odeset('RelTol', 1e-6, 'AbsTol', 1e-8);
-
-[t, sol_fourier] = ode45(odefunc, tspan, fft(iu));
+options = odeset('RelTol', 1e-6, 'AbsTol', 1e-8);
+[t, sol_fourier] = ode45(odefunc, tspan, fft(iu), options);
 u = ifft(sol_fourier, [], 2);
-
+%--------------------------------------
 telapsed = toc(tstart); fprintf('Time processed: %f \n', telapsed);
 %% Plot the solution.
-plot(x, u(1,:), 'b-', x, u(end,:), 'k-', 'LineWidth', 1.5);
+plot(x, u(1,:), 'b-', x, u(end-20,:), 'k-', 'LineWidth', 1.5);
