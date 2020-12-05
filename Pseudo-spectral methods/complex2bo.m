@@ -41,23 +41,10 @@
 % [2] <a href="https://arxiv.org/abs/1705.09996"
 % > DSWs in systems with nonlocal dispersion of Benjamin-Ono type </a>
 
-%% Space-time mesh
+%% Problem domain and initial condition
+[x, k] = generateMesh1D(-pi/(sqrt(2)/2), pi/(sqrt(2)/2), 2^10);
 HilbertSign = 1;  g = 1/2;        % coefficients of the equation
-a = -pi/(sqrt(2)/2);
-b = pi/(sqrt(2)/2); 
-L = b - a;
-N = 2^6+1; 
-h = L/N; 
-scale = 0.5*L/pi;
-if mod(N, 2) == 0
-    x = (a : h : b-h)';
-    k = [0:N/2-1, 0, -N/2+1 : -1]'/scale;
-else
-    x = (a+h/2 : h : b-h/2)';
-    k = [0:(N-1)/2, -(N-1)/2: -1]'/scale;
-end
 tmax = 0.5;
-
 % Initial condition: We use the exact one-phase periodic solution.
 A = 3; 
 kk = sqrt(2)/2; 
@@ -65,7 +52,7 @@ omega = g*(kk^2 + A^4*pi^2)/2;
 t0 = 0; theta0 = 1i*(kk*x - omega*t0);
 iu = A * exp(theta0);
 
-%% Time integration using pseudo-spectral method
+%% Time integration in the Fourier space
 tstart = tic;
 
 ig = 1i*g; 
@@ -77,7 +64,7 @@ myfunc = @(t, uFourier) ...
 tspan = linspace(0, tmax, 51);
 options = odeset('RelTol', 1e-8, 'AbsTol', 1e-10);
 
-[t, uFourier] = ode23s(myfunc, tspan, fft(iu), options);
+[t, uFourier] = ode45(myfunc, tspan, fft(iu), options);
 u = ifft(uFourier, [], 2);
 
 telapsed = toc(tstart); fprintf('Time processed: %f \n', telapsed);
@@ -94,8 +81,6 @@ u_exact = A * exp(theta);
 u_diff = u(end,:) - u_exact;
 subplot(2,2,3)
 plot(x, real(u_diff), x, imag(u_diff));
-
-%% Other 
 
 %% Helper function
 function y = odefunc(~, uFourier, HilbertSign, ig, half_kSquare, absk, half_PiSquare)
