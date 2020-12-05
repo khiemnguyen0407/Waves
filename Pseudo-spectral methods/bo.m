@@ -5,7 +5,7 @@
 % equation. The script is a complete solver of the BO equation in that it
 % starts with setting up a uniform mesh on which the numerical solution
 % will be computed, discretize the solution in space and solve the resulted
-% system of ODEs in time. Unlike the solver for KdV equation (see KDV),
+% system of ODEs in time. Unlike the solver for KdV equation (see kdv.m),
 % this equation cannot be solved by other methods such as the finite
 % difference and finite element methods due to the appearance of the
 % Hilbert transform. The Hilbert transform of function f = f(x) is defined
@@ -36,22 +36,11 @@
 %
 % See also KDV, NLS, DNLS, COMPLEX2BO, BENJAMIN
 
-%% Space-time mesh
-HilbertSign = 1; % This variable corresponds how we define the Hilbert transform.
-a = -pi; b = pi; 
-L = b - a; 
-N = 2^7+1; h = L/N;
-scale = L/(2*pi);
-if mod(N, 2) == 0
-    x = (a : h : b - h)';
-    k = [0:N/2-1, 0, -N/2+1 : -1]'/scale;
-else
-    x = (a + h/2 : h : b -h/2)';
-    k = [0:(N-1)/2, -(N-1)/2: -1]'/scale;
-end
-
-alpha = 2;
-tmax = 2;
+%% Problem domain and initial condition
+[x, k] = generateMesh1D(-pi, pi, 2^7);
+HilbertSign = 1;    % correspond to how we define the Hilbert transform
+alpha = 2;          % coefficient of the nonlinear term
+tmax = 2;           % maximum simulation time
 % Initial condition: We use the exact 1-phase periodic solution or the
 % algebraic 1-soliton solution. These solutions can be found in [3].
 p = -1; r = 1; s = 2;
@@ -59,7 +48,7 @@ t0 = 0;  theta0 = (r - s)*x - (r^2 - s^2)*t0;
 iu = p + r - s + 2*(s-r)*(s-p - sqrt((s-p)*(r-p))*cos(theta0))...
     ./ (r+s-2*p - 2*sqrt((s-p)*(r-p))*cos(theta0));
 
-%% Time integration using pseudo-spectral method
+%% Time integration in the Fourier space
 tstart = tic;
 %--------------------------------------
 ik = 1i*k;
