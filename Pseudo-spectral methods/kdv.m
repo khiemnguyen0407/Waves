@@ -2,9 +2,10 @@
 %   u_t + alpha * u u_x + u_{xxx} = 0
 %
 % This script implements a numerical scheme for solving the Korteweg-de
-% Vries equation. The script is a complete solver of the KdV equation in
-% that it starts with setting up a uniform mesh on which the numerical
-% solution will be computed. The periodic spectral method, which is
+% Vries equation. The script is a complete solver of the KdV equation. That
+% is, it starts with setting up a uniform mesh on which the numerical
+% solution will be computed, discretize the solution in space and solve the
+% resulted system of ODEs in time. The periodic spectral method, which is
 % efficiently implemented via the Fast Fourier Transform, will be used for
 % the spatial discretization. After such discretization, we obtain a system
 % of ordinary differential equations (ODEs) for the solution at each node
@@ -29,7 +30,7 @@
 % To improve numerical stability, we adopt the strategy outlined in [1].
 % Specifically, we eliminate the dispersive term u_{xxx} in the Fourier
 % space by multiplying the entire equation (in Fourier space) by the
-% integrating factor exp(-i*k^3*t) and applying the transformation 
+% integrating factor exp(-i*k^3*t) and applying the transformation
 %   fft(v) = exp(-i *k^3 * t) fft(u)
 % The new unknown would be fft(v) = \hat{v} and the equation must be
 % slightly modified (see [1], Chapter 10, page 111). The solution is
@@ -47,29 +48,18 @@
 %
 % See also BO
 
-%% Space-time mesh
-a = -20;
-b = 120;
-N = 2^10;
-L = b - a;
-scale = 0.5*L/pi;
-h = L/N;
-if mod(N, 2) == 0
-    x = (a : h : b-h)';
-    k = [0:N/2-1, 0, -N/2+1 : -1]'/scale;
-else
-    x = (a+h/2 : h : b-h/2)';
-    k = [0:(N-1)/2, -(N-1)/2: -1]'/scale;
-end
-tmax = 50;
-alpha = 6;      % typical form of the KdV equation.
+%% Problem domain and initial condition
+[x, k] = generateMesh1D(-20, 120, 2^10);
+alpha = 6;      % coefficient of the nonlinear term
+tmax = 50;      % maximum simulation time
 
 % Initial condition: We use one-soliton solution to generate the initial
 % condition. One can use any arbitrary (sufficiently regular) functions for
 % the initial condition.
 c = 1;          % velocity of solitary wave
 iu = 0.5*c * sech(sqrt(c)/2 * (x - 0)).^2;
-%% Time integration using pseudo-spectral method
+
+%% Time integration in the Fourier space
 tstart = tic;
 %--------------------------------------
 ik = 1i*k;
